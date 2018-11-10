@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"hhserver/app/roomserver/client"
+	"hhserver/app/roomserver/localcommand"
 	"net/http"
 	"strconv"
 )
 
 func main() {
+	go localcommand.Local_manager_start()
 	mux := http.NewServeMux()
 	mux.HandleFunc("/ws", wsHandler)
 	wsAddr := ":" + strconv.Itoa(8491)
@@ -24,6 +26,8 @@ func main() {
 		//panic(err)
 	}
 }
+
+
 
 
 

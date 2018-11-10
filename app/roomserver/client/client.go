@@ -22,10 +22,10 @@ var Manager = ClientManager{
 	broadcast:  make(chan []byte),
 	register:   make(chan *Client),
 	unregister: make(chan *Client),
-	clients:    make(map[*Client]bool),
+	Clients:    make(map[*Client]bool),
 }
 type ClientManager struct {
-	clients    map[*Client]bool
+	Clients    map[*Client]bool
 	broadcast  chan []byte
 	register   chan *Client
 	unregister chan *Client
@@ -42,8 +42,12 @@ func (c *Client)ServeClient(){
 	go c.write()
 }
 
+func (c *Client)GetID() string{
+	return c.id
+}
+
 func (manager *ClientManager) send(message []byte, ignore *Client) {
-	for c := range manager.clients {
+	for c := range manager.Clients {
 		if c != ignore {
 			c.send <- message
 		}
@@ -54,24 +58,24 @@ func (manager *ClientManager) start() {
 	for {
 		select {
 		case c := <-manager.register:
-			manager.clients[c] = true
+			manager.Clients[c] = true
 			jsonMessage, _ := json.Marshal(&Message{Content: "/A new socket has connected."})
 			manager.send(jsonMessage, c)
 			fmt.Printf("A new client connected : uid %s , addr : %s\n",c.id,c.socket.RemoteAddr())
 		case conn := <-manager.unregister:
-			if _, ok := manager.clients[conn]; ok {
+			if _, ok := manager.Clients[conn]; ok {
 				close(conn.send)
-				delete(manager.clients, conn)
+				delete(manager.Clients, conn)
 				jsonMessage, _ := json.Marshal(&Message{Content: "/A socket has disconnected."})
 				manager.send(jsonMessage, conn)
 			}
 		case message := <-manager.broadcast:
-			for conn := range manager.clients {
+			for conn := range manager.Clients {
 				select {
 				case conn.send <- message:
 				default:
 					close(conn.send)
-					delete(manager.clients, conn)
+					delete(manager.Clients, conn)
 				}
 			}
 		}
